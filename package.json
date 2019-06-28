@@ -1,0 +1,48 @@
+{
+  "name": "backend_mvc",
+  "version": "1.0.0",
+  "description": "rest api dinas pekerjaan umum kab pangkep. arsitektur mvc",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon start.js"
+  },
+  "keywords": [
+    "rest",
+    "express",
+    "mvc",
+    "mysql"
+  ],
+  "author": "denny rachmadi",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "chalk": "^2.4.2",
+    "cors": "^2.8.5",
+    "dotenv": "^8.0.0",
+    "express": "^4.16.4",
+    "express-fileupload": "^1.1.4",
+    "geojson": "^0.5.0",
+    "geojson-parser": "^1.0.1",
+    "geojson-tools": "^0.2.2",
+    "immutable": "^4.0.0-rc.12",
+    "immutable-geojson": "^0.2.0",
+    "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.11",
+    "morgan": "^1.9.1",
+    "multer": "^1.4.1",
+    "mysql2": "^1.6.5",
+    "qim": "0.0.52",
+    "request-ip": "^2.1.3",
+    "sequelize": "^5.8.7"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.0.6",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1",
+    "babel-register": "^6.26.0",
+    "nodemon": "^1.19.0"
+  }
+}
