@@ -2,78 +2,102 @@ import db from '../dbSequelize';
 import _ from 'lodash';
 import response from './res';
 
+import geojson from 'geojson';
+
 import { 
 	isFeatureIdExists,
 	clearRiverByFeatureId, 
 	generateInsertValues,
 	insertRiverData } from '../helpers';
 
+
+
+// test load data sungai_geom beserta attribut
 exports.load = (req,res) => {
-	const {
-		sungai_geom:riverMdl
+
+	const { 
+		sungai_geom: model_sungai
 	} = db.models
 
-	const getUniqueFeatures = async () => {
+	const extract_fid_unik = async () => {
 		try{			
-			const result = await riverMdl.findAll();
+			const result = await model_sungai.findAll();
 			const uniqueResult = _.uniq(result.map(item=>item.featureId));
-			console.log(uniqueResult);
-			return uniqueResult;			
+			return uniqueResult;
+			// output [id1,id2,id3] 			
 		}catch(err){
 			console.log('error while get features data',err);
 		}
 	}
 
-	// get array of coordinates from each features
-	const getCoordinatesFromFeatures = async (featureId,index) => {
+	const extract_kordinat = async (id) => {
 		try{
-			const coordinates = await riverMdl.findAll({ where:{ featureId:featureId }})
-			const coordItem = coordinates.map(coord=>{
-				let item = []
-				item.push(coord.lng);
-				item.push(coord.lat);
-				return item;
+			const kordinat = await model_sungai.findAll({ where:{ featureId:id }})
+			// console.log(kordinat.dataValues.lng);
+			const all = kordinat.map( coord=>{
+				let item_kordinat = [];
+				item_kordinat.push(coord.lng)
+				item_kordinat.push(coord.lat)				
+				return item_kordinat;
 			});
-			return coordItem;
-			
-		}catch(err){
-			console.log('error while getting coordinates data',err);	
-		}
+			return all;
+		}catch(err){}
 	}
 
-	getUniqueFeatures()
-	.then(result=>{
-		// console.log('result:',result)
-		const uniqueLength = result.length
-		const features = [];
-		result.map((featureId,index)=>{
-				
-			getCoordinatesFromFeatures(featureId,index).then(result => {
+	const getAttribut = async (featureId) => {
+		const q = `SELECT 
+							a.idkecm,c.nmkecm,b.nmsung,a.jenis_sungai,a.keterangan
+							FROM sungai_geom a
+							INNER JOIN mst_sungai b on a.idsung=b.id 
+							INNER JOIN mst_kecamatan c on a.idkecm=c.idkecm
+							WHERE a.featureId=:featureId
+							limit 1`;
+		const attribut = await db.query(q, { replacements: { featureId: featureId }, type:db.QueryTypes.SELECT })
+		//console.log(attribut);
+		return attribut;
+		
+	}	
 
-				let obj = {}
-				let geom = {}
-				let properties = {}
-				obj['type'] = 'Feature'
-				obj['id'] = featureId;
-				geom['type'] = 'LineString'
-				geom['coordinates'] = result
-				obj['geometry'] = geom;
-				obj['properties'] = { featureId }
-				return obj;
-			}).then(result2=>{				
-				features.push(result2)
-				return features;
-			}).then(result3=>{
-				// console.log(result3);
-				// console.log(index)
-				// console.log(uniqueLength)
-				// last
-				if(uniqueLength === index + 1){
-					// console.log(features);
-					return res.status(200).json(features);
-				}
-			})			
-		});
+	const exec = async _ =>{		
+		let unik = await extract_fid_unik();		
+		const koord_master = []
+
+		for (let i = 0; i < unik.length; i++) {
+    	let featureId = unik[i]
+			const koord_arr = []
+    	let koord = await extract_kordinat(unik[i])
+	    koord_arr.push(koord);	    
+
+	    let prop = await getAttribut(unik[i])
+
+			const obj = {};
+			
+			for (let j = 0; j < prop.length; j++) {
+				
+				obj['idkecm'] = prop[j].idkecm;
+				obj['nmkecm'] = prop[j].nmkecm;
+				obj['nmsung'] = prop[j].nmsung;
+				obj['jenis_sungai'] = prop[j].jenis_sungai;
+				obj['keterangan'] = prop[j].keterangan;
+			}
+
+			obj['featureId'] = featureId;
+			obj['line'] = koord_arr[0];
+
+			koord_master.push(obj);
+			if(unik.length === i + 1){
+				// return obj;				
+				return koord_master
+			}
+		}
+
+		return koord_master
+	
+	}
+
+	exec().then(featureUnik=>{		
+		var result = geojson.parse(featureUnik, {'LineString': 'line'});
+		response.ok(result.features, res);
 	});
 
 }
@@ -145,15 +169,60 @@ exports.deleteRiver = (req,res) => {
 		sungai_geom
 	} = db.models
 
-	const doDelete = async (featureId) => {
-		// const deletedRiver = await sungai_geom.destroy({ where:{ featureId:featureId } });
-		const deletedId = await sungai_geom.findOne({ where:{ featureId:featureId } })
-		console.log(deletedId)
+	
+	
+	
+	const isFeatureIdExist = async (featureId) => {
+		const data = await sungai_geom.findOne({ where:{ featureId:featureId } })
+		const idsung = data.dataValues.idsung 		
+		if (data.dataValues.featureId) {
+		    return {
+		    	featureId:data.dataValues.featureId,
+		    	idsung:data.dataValues.idsung
+		    }
+		} else {
+		    return false;
+		}
+			return false;
 	}
 
-	doDelete(featureId).then(result=>{
-		console.log(result)
+	const doDeleteAction = async (featureId) => {
+
+		const objekHapus = await isFeatureIdExist(featureId);
+		// const featureId = objekHapus.featureId
+		const idsung = objekHapus.idsung
+		// console.log('objekHapus:',objekHapus);
+		const deletedRiver = await sungai_geom.destroy({ where:{ featureId:featureId } }); // return berapa row yg dihapus
+		const deletedRiverAttribute = await mst_sungai.destroy({ where:{ id:idsung } }); // return berapa row yg dihapus
+		console.log('deletedRiver:',deletedRiver);
+		console.log('deletedRiverAttribute:',deletedRiverAttribute);
+
+		if(deletedRiver > 0 && deletedRiverAttribute > 0){
+			return true
+		}else{
+			return false
+		}
+		return false;
+	}
+
+	doDeleteAction(featureId).then(result=>{
+		console.log('result',result);
+		if(result){
+			response.ok(result,res);
+		}else{
+			response.error(result,res);
+		}
 	})
+
+	/*isFeatureIdExist(featureId).then(result=>{
+		// console.log(result)
+		if(result.featureId){
+			const idsung = result.idsung;
+			// console.log(featureId);
+			// console.log(idsung);
+			
+		}
+	})*/
 	
 
 }

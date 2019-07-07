@@ -1,0 +1,60 @@
+import db from '../dbSequelize';
+import _ from 'lodash';
+
+const {
+	project
+} = db.models;
+
+const isFeatureIdExists = async features => {
+	const featureId = _.map(features,'id');
+	const result = await project.findOne({
+		where: { featureId:featureId }
+	});
+
+	if(result){		
+		return result.dataValues.featureId;
+	}
+	return result;
+}
+
+const clearProjectByFeatureId = async featureId => {
+	const result = await project.destroy({
+		where:{ featureId:featureId }
+	});
+	return result; // return number deleted rows 
+}
+
+const generateInsertValues = async (features,properties) => {
+	const featureId = _.map(features, 'id');
+	const geom = _.map(features, 'geometry');
+	const coord = geom[0].coordinates;
+
+	// console.log(properties);
+	const nampro = properties.nampro;
+	const tglpro = properties.tglpro;
+	const ketera = properties.ketera;
+
+	const values = [];
+	values.push(featureId[0],nampro,tglpro,ketera,coord[0],coord[1]);	
+	return values;
+}
+
+const insertProjectData = async values => {
+
+	const result = await project.create({
+		featureId:values[0],
+		nampro:values[1],
+		tglpro:values[2],
+		ketera:values[3],
+		lng:values[4],
+		lat:values[5],
+	});
+	return result;
+} 
+
+export {
+	isFeatureIdExists,
+	clearProjectByFeatureId,
+	generateInsertValues,
+	insertProjectData
+}

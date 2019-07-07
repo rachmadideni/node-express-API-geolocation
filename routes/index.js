@@ -19,29 +19,52 @@ module.exports = app => {
 
     // auth
     const auth = require('../controllers/auth');
-    app.route('/api/auth/signin').post(auth.signin);
+    app.route('/api/auth/signin').post(auth.signin); // added to postman
 
-    // import geojson data to mysql    
+    // import geojson (only river data) to mysql    
     const geojson = require('../controllers/geojson');
-    app.route('/api/geojson/import').post(geojson.import);
+    app.route('/api/geojson/import').post(geojson.import); // added to postman
 
     // options 
     // (master kecamatan)
     const options = require('../controllers/options')
-    app.route('/api/options/:optionKey').get(options.kecamatan);
+    app.route('/api/options/:optionKey').get(options.kecamatan); // added to postman
 
     // load river
     const river = require('../controllers/river');
-    app.route('/api/geojson/load/river').get(river.load);
+    app.route('/api/geojson/load/river').get(river.load); // added to postman
+
 
     // get river attributes    
-    app.route('/api/geojson/sungai/attribut/:featureId').get(river.loadAttributes);
-    app.route('/api/geojson/sungai/add').post(river.addRiver);
-    app.route('/api/geojson/sungai/hapus').post(river.deleteRiver);
+    app.route('/api/geojson/sungai/attribut/:featureId').get(river.loadAttributes); // added to postman
+    app.route('/api/geojson/sungai/add').post(river.addRiver); // added to postman
+    app.route('/api/geojson/sungai/hapus').post(river.deleteRiver); // added to postman
+
+    const project = require('../controllers/project');
+    app.route('/api/geojson/project/load').get(project.load); // added to postman
+    app.route('/api/geojson/project/add').post(project.addProject); // added to postman
+    app.route('/api/geojson/project/attribut/:featureId').get(project.loadAttributes); // added to postman
+
+    app.route('/api/geojson/project/getUploadFiles/:featureId').get(project.getUploadFiles); // added to postman
+
+    // test endpoints
+    /*
+        TODO #NO 1 
+        *** read below section for details
+     */
+    //app.route('/api/sungai').get(river.load_sungai);
     
+    // TODO
+    /*
+        1.  create 1 api request for river coordinates combine with their attributes as a single response
+            expected output is a json/geojson file
 
-    // upload json
-    // app.route('/api/geojson/upload').post(geojson.upload,upload.single('data'));
+        2.  export and combined river & project data for website
+            expected format is a json file
 
+        3.  dump database as backup sql file
+            expected format as string with .sql extension
+
+     */
     
 }
