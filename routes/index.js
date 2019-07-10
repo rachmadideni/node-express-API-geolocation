@@ -36,7 +36,8 @@ module.exports = app => {
 
 
     // get river attributes    
-    app.route('/api/geojson/sungai/attribut/:featureId').get(river.loadAttributes); // added to postman
+    //app.route('/api/geojson/sungai/attribut/:featureId').get(river.loadAttributes); // added to postman
+    app.route('/api/geojson/sungai/attribut/:idsung').get(river.loadAttributes); // added to postman
     app.route('/api/geojson/sungai/add').post(river.addRiver); // added to postman
     app.route('/api/geojson/sungai/hapus').post(river.deleteRiver); // added to postman
 

@@ -8,7 +8,10 @@ import {
 	isFeatureIdExists,
 	clearRiverByFeatureId, 
 	generateInsertValues,
-	insertRiverData } from '../helpers';
+	insertRiverData,
+	addRiverName,
+	updateMasterRiver
+} from '../helpers';
 
 
 
@@ -46,7 +49,7 @@ exports.load = (req,res) => {
 
 	const getAttribut = async (featureId) => {
 		const q = `SELECT 
-							a.idkecm,c.nmkecm,b.nmsung,a.jenis_sungai,a.keterangan
+							a.idkecm,c.nmkecm,b.nmsung,a.jenis_sungai,a.keterangan,a.idsung
 							FROM sungai_geom a
 							INNER JOIN mst_sungai b on a.idsung=b.id 
 							INNER JOIN mst_kecamatan c on a.idkecm=c.idkecm
@@ -79,6 +82,7 @@ exports.load = (req,res) => {
 				obj['nmsung'] = prop[j].nmsung;
 				obj['jenis_sungai'] = prop[j].jenis_sungai;
 				obj['keterangan'] = prop[j].keterangan;
+				obj['idsung'] = prop[j].idsung
 			}
 
 			obj['featureId'] = featureId;
@@ -108,7 +112,7 @@ exports.loadAttributes = (req,res) => {
 		sungai_geom
 	} = db.models
 
-	const featureId = req.params.featureId;
+	/*const featureId = req.params.featureId;
 	const featureToRequest = sungai_geom.findOne({ where:{ featureId:featureId } });
 
 	const q = `SELECT 
@@ -121,34 +125,85 @@ exports.loadAttributes = (req,res) => {
 
 	db.query(q, { replacements: { featureId: featureId }, type:db.QueryTypes.SELECT })
 	.then(result=>{
-		// console.log(result);
+
 		if(result){			
 			response.ok(result,res);
 		}else{
 			response.error(result,res);
 		}
-	})
+	})*/
+
+	const idsung = req.params.idsung;
+	const q = `SELECT 
+						a.idkecm,c.nmkecm,b.nmsung,a.jenis_sungai,a.keterangan,a.idsung
+						FROM sungai_geom a
+						INNER JOIN mst_sungai b on a.idsung=b.id 
+						INNER JOIN mst_kecamatan c on a.idkecm=c.idkecm
+						WHERE a.idsung=:idsung
+						LIMIT 1`;
+
+	db.query(q, { replacements: { idsung: idsung }, type:db.QueryTypes.SELECT })
+	.then(result=>{
+
+		if(result){			
+			response.ok(result,res);
+		}else{
+			response.error(result,res);
+		}
+	})	
+
+
+
+
 
 }
 
 exports.addRiver = (req,res) => {
 
-	const { sungai_geom } = db.models;
+	const { 
+		sungai_geom 
+	} = db.models;
 
-	const features = req.body.features;
-	const properties = req.body.properties;
-	const featureId = _.map(features,'id');
 
+	const features = req.body.features; // features dari komponen draw
+	const featureId = features[0].properties.featureId;
+	const properties = req.body.properties; // semua properti sungai dari state form > river
+	
+	const nmsung_lama = features[0].properties.nmsung;
+	const nmsung_baru = properties.sungai;
+	const idsung = properties.idsung;
+
+	// old: features[0].properties.nmsung
+	// update : properties.sungai
+	 
 	const addRiver = async (features) => {
-		const isExists = await isFeatureIdExists(features);		
-		const clearData = await clearRiverByFeatureId(featureId[0]);
-		if (isExists === featureId[0]) {
+		const isExists = await isFeatureIdExists(features); // cek di sungai_geom return featureId
+		const clearData = await clearRiverByFeatureId(featureId); // hapus di sungai_geom
+		if (isExists === featureId) {
 			const values = await generateInsertValues(features, properties);
+			// console.log('sama')
+			// console.log('generateInsertValues : ',values);
 			if(values.length > 0){
+				
+				if(nmsung_lama !== nmsung_baru){
+					console.log('nama sungai mau diupdate!')
+					// cek dulu jika idsung null berarti input baru master sungai
+					if(idsung){
+						// update nama sungai di master_sungai berdasarkan id sungai
+						const updatedMaster = await updateMasterRiver(idsung,nmsung_baru);							
+					}else{						
+						const addRiverName = await addRiverName(nmsung);
+						//console.log('addRiverName:',addRiverName)
+					}
+				}else{
+					console.log('nama sungai tetap sama!')
+				}
+
 				const insertToDB = await insertRiverData(values);
 				return insertToDB;
 			}
-			// console.log(insertToDB);
+
+
 		}  
 	}
 

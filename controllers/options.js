@@ -8,8 +8,7 @@ exports.kecamatan = (req,res) => {
 	const q = `select idkecm,nmkecm from mst_kecamatan order by nmkecm asc`;
 	db.query(q,{
 		type:db.QueryTypes.SELECT
-	}).then(result=>{
-		console.log(result);
+	}).then(result=>{		
 		if(result){
 			response.ok(result,res);
 		}else{

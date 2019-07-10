@@ -5,11 +5,13 @@ const {
 	mst_sungai,
 	sungai_geom } = db.models;
 
-const isRiverExists = async (nmsung) => {
+const isRiverExists = async (idsung) => {
 	try{
-		const result = await mst_sungai.findOne({ where:{ nmsung:nmsung }});
-		const idsung = result.dataValues.id;
-		return idsung;
+		const result = await mst_sungai.findOne({ where:{ id:idsung }});
+		if(result){
+			return result.dataValues.id;
+		}
+		return result;
 	}catch(err){
 		console.log(err);
 	}
@@ -22,19 +24,21 @@ const generateInsertValues = async (features, properties) => {
 		const coord = geom[0].coordinates;		
 
 		const nmsung = properties.sungai;
+		const idsung_state = properties.idsung;
 		const idkecm = properties.kecamatan;
+		
 		const jenis_sungai = properties.jenis_sungai;
 		const keterangan = properties.keterangan;
 
-		const idsung = await isRiverExists(nmsung);
+		const idsung = await isRiverExists(idsung_state);		
 
 		const values = [];
 		if (geom[0].type === 'LineString') {
 			for (var i = 0; i < coord.length; i++) {
 			   values[i] = [
 			   		featureId[0], 
-			   		idsung, 
 			   		idkecm, 
+			   		idsung, 
 			   		coord[i][0], 
 			   		coord[i][1], 
 			   		jenis_sungai, 
@@ -45,7 +49,7 @@ const generateInsertValues = async (features, properties) => {
 			// multi line string
 			for (var i = 0; i < coord.length; i++) {
 				for(var j = 0; j < coord[i].length; j++ ){		
-					values[j] = [featureId[0], idsung, idkecm, coord[i][j], coord[i][j], jenis_sungai, keterangan];								
+					values[j] = [featureId[0], idkecm, idsung, coord[i][j], coord[i][j], jenis_sungai, keterangan];								
 				}
 			}
 		}
@@ -65,12 +69,14 @@ const clearRiverByFeatureId = async (featureId) => {
 
 const isFeatureIdExists = async (features) => {
 
-	const featureId = _.map(features, 'id');
+	// const featureId = _.map(features, 'id');	
+	// console.log('featureId:',features[0].properties.featureId);		
+	const featureId = features[0].properties.featureId;
 	const result = await sungai_geom.findOne({
 		where: { featureId:featureId }
 	});
 
-	if(result){		
+	if(result){
 		return result.dataValues.featureId;
 	}
 	return result;
@@ -83,13 +89,25 @@ const insertRiverData = async (values) => {
 }
 
 const addRiverName = async (riverName) => {
-	const result = await sungai_geom.findOrCreate({ where:{ nmsung:riverName } })
+	const result = await mst_sungai.findOrCreate({ where:{ nmsung:riverName } })
+	// console.log('addRiverName:',result);
 	return result;
 }
+
+const updateMasterRiver = async (idsung,nmsung_baru) => {
+	const result = mst_sungai.upsert({
+		id:idsung,
+		nmsung:nmsung_baru
+	});
+	// console.log('updateMasterRiver:', result);
+	return result;
+}
+
 export {  
 	generateInsertValues,
 	isFeatureIdExists,
 	insertRiverData,
 	clearRiverByFeatureId,
-	addRiverName
+	addRiverName,
+	updateMasterRiver
 }
