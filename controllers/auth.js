@@ -16,10 +16,8 @@ exports.signin = (req,res) => {
 	user.findOne({ where: { usernm: username, passwd: password } }).then(results => {
 	    
 	    console.log(results);
-	    if(!!results){
-	    	response.error(results,res)
-	    }else{	    	
-			    try{		    
+	    if(results){
+	    	try{		    
 				    const { iduser,usernm,user_category } = results.dataValues;
 				    
 				    // create token
@@ -43,9 +41,8 @@ exports.signin = (req,res) => {
 			    }catch(err){	    	
 						response.error('error creating user token',res);	    	
 			    }
+	    }else{	    	
+	    	response.error(results,res)			    
 	    }
-
-
 	})
-
 }
