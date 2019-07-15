@@ -48,6 +48,9 @@ module.exports = app => {
 
     app.route('/api/geojson/project/getUploadFiles/:featureId').get(project.getUploadFiles); // added to postman
 
+    // save geojson folder static
+    app.route('/api/geojson/download/:filename').get(geojson.exportFile);
+
     // test endpoints
     /*
         TODO #NO 1 
