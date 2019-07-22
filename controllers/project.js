@@ -9,12 +9,57 @@ import {
 	insertProjectData
 } from '../helpers/project'
 
+// 22/07/2019
+exports.replaceCoordinat = (req,res) => {
+	
+	// req.body.data isinya data features 
+	const {
+		data
+	} = req.body
+
+	const properties = _.map(data,'properties');
+	const featureId = properties[0].featureId; 
+
+	const hapusData = async featureId => {
+		return await clearProjectByFeatureId(featureId);
+	}
+
+	const replaceCoord = async (features,properties,featureId) => {
+			
+			// if(features.length > 0){
+				const deleteResult = await hapusData(featureId);
+
+				if(deleteResult > 0){
+					const values = await generateInsertValues(features,properties);
+					if(values.length > 0){
+						const insertToDB = await insertProjectData(values);
+						return insertToDB
+					}
+				}				
+			// }		
+	}
+
+	console.log(data[0]);
+	console.log(featureId);
+	console.log(properties);
+
+	replaceCoord(data[0],properties[0],featureId).then(result=>{
+		// console.log(result);
+		if(result){
+			response.ok(result,res);
+		}else{
+			response.error(result,res);
+		}
+	});
+
+}
+
 exports.addProject = (req,res) => {
 	const features = req.body.features;
 	const properties = req.body.properties;
 	const featureId = _.map(features,'id');
 
-	const addProject = async features => {
+	const addProject = async (features,properties) => {
 		const isExists = await isFeatureIdExists(features);// return featureId jika featureid ada
 		// const clearData = await clearProjectByFeatureId(featureId[0]); // hapus data sebelumnya
 		// console.log('isExists:',isExists);
@@ -50,9 +95,10 @@ exports.addProject = (req,res) => {
 			
 			// jika null atau data belum ada maka insert data
 			// generate / persiapkan data untuk diinput
-			
+			console.log('else properties:', properties); // id = ''
+			console.log('else features:', features); 
 			const values = await generateInsertValues(features,properties);
-			if(values.length >0){
+			if(values.length > 0){
 				const insertToDB = await insertProjectData(values);
 				return insertToDB
 			} 
@@ -60,9 +106,8 @@ exports.addProject = (req,res) => {
 
 	}
 
-	addProject(features).then(r=>{
+	addProject(features,properties).then(r=>{
 		if(r){
-			// console.log(r);
 			response.ok(r,res);
 		}else{
 			response.error(r,res);
@@ -161,5 +206,38 @@ exports.load = (req,res) => {
 			response.error(null,res);
 		}
 	})
+
+}
+
+exports.deleteProject = (req,res) => {
+	// delete project where featureID =
+	const featureId = req.body.featureId;
+	const {
+		project
+	} = db.models;
+
+	const isProjectExists = async featureId => {
+		const data = await project.findOne({ where:{featureId:featureId} } );
+		return data.dataValues.featureId;
+	}
+
+	const deleteForMeAction = async featureId => {
+		const id = await isProjectExists(featureId);
+		if(id){
+			const deleteStatus = await project.destroy({ where:{featureId:featureId} });
+			if(deleteStatus > 0){
+				return true;
+			}
+			return false;
+		} 
+	}
+
+	deleteForMeAction(featureId).then(result=>{
+		if(result){
+			response.ok(result,res);
+		}else{
+			response.error(result,res);
+		}
+	});
 
 }

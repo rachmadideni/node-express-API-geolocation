@@ -1,0 +1,8 @@
+INSERT INTO `mst_sungai` (`nmsung`) VALUES ('salo segeri');
+INSERT INTO `mst_sungai` (`nmsung`) VALUES ('salo malereng updated 7');
+INSERT INTO `mst_sungai` (`nmsung`) VALUES ('salo pangkajene');
+INSERT INTO `mst_sungai` (`nmsung`) VALUES ('tb2 update 2345');
+INSERT INTO `mst_sungai` (`nmsung`) VALUES ('tb3');
+INSERT INTO `mst_sungai` (`nmsung`) VALUES ('tbbb 2');
+INSERT INTO `mst_sungai` (`nmsung`) VALUES ('sbaru');
+INSERT INTO `mst_sungai` (`nmsung`) VALUES ('sungai kelok');

@@ -36,10 +36,20 @@ module.exports = app => {
 
 
     // get river attributes    
-    //app.route('/api/geojson/sungai/attribut/:featureId').get(river.loadAttributes); // added to postman
     app.route('/api/geojson/sungai/attribut/:idsung').get(river.loadAttributes); // added to postman
     app.route('/api/geojson/sungai/add').post(river.addRiver); // added to postman
     app.route('/api/geojson/sungai/hapus').post(river.deleteRiver); // added to postman
+
+    // tambah sungai baru
+    app.route('/api/geojson/sungai/addNew').post(river.addNewRiver);
+    app.route('/api/geojson/sungai/updateProperty').post(river.updateRiverPropertyCall);
+    app.route('/api/geojson/sungai/attributById/:featureId').get(river.loadAttributesById);
+
+    // query properti sungai (18/07/2019)
+    app.route('/api/geojson/sungai/queryProperti/:featureId').get(river.queryProperti);
+
+    // replace map sungai (18/07/2019)
+    app.route('/api/geojson/sungai/replaceMap').post(river.replaceMapRiver);
 
     const project = require('../controllers/project');
     app.route('/api/geojson/project/load').get(project.load); // added to postman
@@ -47,6 +57,10 @@ module.exports = app => {
     app.route('/api/geojson/project/attribut/:featureId').get(project.loadAttributes); // added to postman
 
     app.route('/api/geojson/project/getUploadFiles/:featureId').get(project.getUploadFiles); // added to postman
+    app.route('/api/geojson/project/hapus').post(project.deleteProject);
+
+    // replace coordinat project (22/07/2019)
+    app.route('/api/geojson/project/replaceCoordinate').post(project.replaceCoordinat);
 
     // save geojson folder static
     app.route('/api/geojson/download/:filename').get(geojson.exportFile);

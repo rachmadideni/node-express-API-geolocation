@@ -226,20 +226,27 @@ exports.exportFile = (req,res) => {
 	}
 
 	combine().then(result=>{
-		const combined = geojson.parse(result, {'Point':['lat','lng'], 'LineString': 'line'});
-		// const parsed = JSON.parse(combined);
+
+		// Make Json
+		const combined = geojson.parse(result, {'Point':['lat','lng'], 'LineString': 'line'});		
 		const stringify = JSON.stringify(combined);		
+		
+		// set file location
 		const fileLocation = path.join('./uploads', filename + '.json');
+		
 		fs.writeFile(fileLocation, stringify, 'utf8', err=>{
 			if(err){
-				console.log(err)
+				console.log(err);
 			}
-
-			// res.download
+			 
 			response.ok(`${filename}.json`,res);
+
+			//res.download(fileLocation);
+			// res.download
+			//response.ok(combined,res);
 			// console.log('json sdh disimpan ke file')
 
-		})
+		});
 		// console.log('combine:',combined) 
 		// response.ok(combined,res);
 		// response.ok(result.features, res);

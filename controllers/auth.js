@@ -15,7 +15,8 @@ exports.signin = (req,res) => {
 
 	user.findOne({ where: { usernm: username, passwd: password } }).then(results => {
 	    
-	    console.log(results);
+	    // console.log(results);
+	    
 	    if(results){
 	    	try{		    
 				    const { iduser,usernm,user_category } = results.dataValues;

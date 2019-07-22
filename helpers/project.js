@@ -25,9 +25,18 @@ const clearProjectByFeatureId = async featureId => {
 }
 
 const generateInsertValues = async (features,properties) => {
-	const featureId = _.map(features, 'id');
-	const geom = _.map(features, 'geometry');
-	const coord = geom[0].coordinates;
+	
+
+	const featureId = features.id;
+	const coord = features.geometry.coordinates;
+
+	// const featureId = _.map(features, 'id');
+	// const geom = _.map(features, 'geometry');
+	// const coord = geom[0].coordinates;
+	// const coord = geom.coordinates;
+
+	// console.log('generateInsertValues features: ', features);
+	// console.log('generateInsertValues properties: ', properties);
 
 	// console.log(properties);
 	const nampro = properties.nampro;
@@ -35,12 +44,12 @@ const generateInsertValues = async (features,properties) => {
 	const ketera = properties.ketera;
 
 	const values = [];
-	values.push(featureId[0],nampro,tglpro,ketera,coord[0],coord[1]);	
+	// values.push(featureId[0],nampro,tglpro,ketera,coord[0],coord[1]);	
+	values.push(featureId,nampro,tglpro,ketera,coord[0],coord[1]);	
 	return values;
 }
 
 const insertProjectData = async values => {
-
 	const result = await project.create({
 		featureId:values[0],
 		nampro:values[1],
