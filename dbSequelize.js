@@ -40,7 +40,7 @@ Conn.sync({ force:false })
 
 // cek koneksi ke database
 Conn.authenticate().then(()=>{
-	console.log(chalk.green('Database Connected successfully'));
+	console.log(chalk.blue('Database Connected successfully'));
 }).catch(err=>{	
 	console.log(chalk.red('Unable to connect to database'));
 });

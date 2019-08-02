@@ -369,7 +369,8 @@ exports.deleteRiver = (req,res) => {
 		console.log('deletedRiver:',deletedRiver);
 		console.log('deletedRiverAttribute:',deletedRiverAttribute);
 
-		if(deletedRiver > 0 && deletedRiverAttribute > 0){
+		// if(deletedRiver > 0 && deletedRiverAttribute > 0){
+		if(deletedRiver > 0){
 			return true
 		}else{
 			return false

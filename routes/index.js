@@ -1,5 +1,6 @@
 import multer from 'multer';
 
+// Options Storage 
 const storage = multer.diskStorage({
 	destination:function(req,file,callback){
 		callback(null,'uploads/')
@@ -9,80 +10,44 @@ const storage = multer.diskStorage({
 		// str.split("/")[1];
 		callback(null,file.fieldname + '_' + Date.now() + '.' + ext)
 	}
-})
+});
+
 const upload = multer({ storage:storage });
 
 module.exports = app => {
-    // TEST ROUTES
-    // const test = require('../controllers');
-    // app.route('/').get(test.index);
 
-    // auth
+    // REQUIRE CONTROLLER
     const auth = require('../controllers/auth');
-    app.route('/api/auth/signin').post(auth.signin); // added to postman
-
-    // import geojson (only river data) to mysql    
     const geojson = require('../controllers/geojson');
-    app.route('/api/geojson/import').post(geojson.import); // added to postman
-
-    // options 
-    // (master kecamatan)
-    const options = require('../controllers/options')
-    app.route('/api/options/:optionKey').get(options.kecamatan); // added to postman
-
-    // load river
+    const options = require('../controllers/options');
     const river = require('../controllers/river');
-    app.route('/api/geojson/load/river').get(river.load); // added to postman
-
-
-    // get river attributes    
-    app.route('/api/geojson/sungai/attribut/:idsung').get(river.loadAttributes); // added to postman
-    app.route('/api/geojson/sungai/add').post(river.addRiver); // added to postman
-    app.route('/api/geojson/sungai/hapus').post(river.deleteRiver); // added to postman
-
-    // tambah sungai baru
-    app.route('/api/geojson/sungai/addNew').post(river.addNewRiver);
-    app.route('/api/geojson/sungai/updateProperty').post(river.updateRiverPropertyCall);
-    app.route('/api/geojson/sungai/attributById/:featureId').get(river.loadAttributesById);
-
-    // query properti sungai (18/07/2019)
-    app.route('/api/geojson/sungai/queryProperti/:featureId').get(river.queryProperti);
-
-    // replace map sungai (18/07/2019)
-    app.route('/api/geojson/sungai/replaceMap').post(river.replaceMapRiver);
-
     const project = require('../controllers/project');
-    app.route('/api/geojson/project/load').get(project.load); // added to postman
-    app.route('/api/geojson/project/add').post(project.addProject); // added to postman
-    app.route('/api/geojson/project/attribut/:featureId').get(project.loadAttributes); // added to postman
-
-    app.route('/api/geojson/project/getUploadFiles/:featureId').get(project.getUploadFiles); // added to postman
-    app.route('/api/geojson/project/hapus').post(project.deleteProject);
-
-    // replace coordinat project (22/07/2019)
-    app.route('/api/geojson/project/replaceCoordinate').post(project.replaceCoordinat);
-
-    // save geojson folder static
-    app.route('/api/geojson/download/:filename').get(geojson.exportFile);
-
-    // test endpoints
-    /*
-        TODO #NO 1 
-        *** read below section for details
-     */
-    //app.route('/api/sungai').get(river.load_sungai);
     
-    // TODO
-    /*
-        1.  create 1 api request for river coordinates combine with their attributes as a single response
-            expected output is a json/geojson file
+    // AUTH
+    app.route('/api/auth/signin').post(auth.signin); // otoriasasi
+    
+    app.route('/api/geojson/import').post(geojson.import); // import geojson (hanya berlaku utk data sungai) ke database: tabel sungai_geom    
+    app.route('/api/geojson/download/:filename').get(geojson.exportFile); // Export/save geojson folder static
+    app.route('/api/options/:optionKey').get(options.kecamatan); // options     
 
-        2.  export and combined river & project data for website
-            expected format is a json file
+    // SUNGAI
+    app.route('/api/geojson/load/river').get(river.load); // Load Sungai
+    app.route('/api/geojson/sungai/attribut/:idsung').get(river.loadAttributes); // Query Atribut berdasarkan Id Sungai
+    app.route('/api/geojson/sungai/add').post(river.addRiver); // added to postman
+    app.route('/api/geojson/sungai/hapus').post(river.deleteRiver); // added to postman    
+    app.route('/api/geojson/sungai/addNew').post(river.addNewRiver); // tambah sungai baru
+    app.route('/api/geojson/sungai/updateProperty').post(river.updateRiverPropertyCall);
+    app.route('/api/geojson/sungai/attributById/:featureId').get(river.loadAttributesById); // Query Atribut sungai berdasarkan Feature Id
+    app.route('/api/geojson/sungai/queryProperti/:featureId').get(river.queryProperti); // query properti sungai (18/07/2019)
+    app.route('/api/geojson/sungai/replaceMap').post(river.replaceMapRiver); // replace map sungai (18/07/2019)    
 
-        3.  dump database as backup sql file
-            expected format as string with .sql extension
+    // PROJECT
+    app.route('/api/geojson/project/load').get(project.load); // Load Project
+    app.route('/api/geojson/project/add').post(project.addProject); // Tambah Project Baru
+    app.route('/api/geojson/project/attribut/:featureId').get(project.loadAttributes); // Query Atribut Project
+    app.route('/api/geojson/project/getUploadFiles/:featureId').get(project.getUploadFiles); // Ambil File upload Project
+    app.route('/api/geojson/project/hapus').post(project.deleteProject); // Hapus Project
+    app.route('/api/geojson/project/replaceCoordinate').post(project.replaceCoordinat);// replace coordinat project (22/07/2019)
 
-     */
     
 }
