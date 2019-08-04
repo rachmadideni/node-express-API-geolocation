@@ -446,7 +446,6 @@ exports.replaceMapRiver = (req,res) => {
 	const { data } = req.body;	
 	const properties = _.map(data,'properties');	
 	
-	// properties
 	const featureId = properties[0].featureId;
 	const idkecm = properties[0].idkecm;
 	const idsung = properties[0].idsung;
@@ -461,26 +460,20 @@ exports.replaceMapRiver = (req,res) => {
 		return hapusData;
 	}
 
-
-	// if (features.length > 0 && features.length < 2) {
 	if (data.length > 0 ) {	
 
-				// console.log(okTerhapus);
 				hapusDataLama(featureId).then(result=>{
-					console.log(result);
+
 					// jika sukses hapus
 					if(result > 0){
 						// siap input baru lagi dgn perubahan						
 						const coords = geom[0].coordinates;
-						// const coord = coords[0];
 						
 						const values = []
 						coords.map((item,i)=>{			
 							console.log(item);
-							values[i] = [featureId,idkecm,idsung,item[0],item[1],jenis_sungai,keterangan]
+							values[i] = [featureId, idkecm, idsung, item[0], item[1], jenis_sungai, keterangan]
 						});
-
-						console.log(values);				
 
 						const q = `INSERT INTO sungai_geom (featureId,idkecm,idsung,lng,lat,jenis_sungai,keterangan) VALUES ?`;
 						db.query(q, {

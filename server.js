@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(logger("dev"));
 app.use('/api/geojson', upload);
-app.use('/api/static/', express.static('uploads'))
+app.use('/api/static/', express.static('uploads'));
 routes(app);
 
 app.listen(process.env.app_port, () => console.log(chalk.blue.bold(`LISTENING ON PORT ${process.env.app_port}`)));

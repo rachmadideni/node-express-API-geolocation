@@ -22,12 +22,19 @@ module.exports = app => {
     const options = require('../controllers/options');
     const river = require('../controllers/river');
     const project = require('../controllers/project');
+    const utilities = require('../controllers');
     
     // AUTH
     app.route('/api/auth/signin').post(auth.signin); // otoriasasi
     
+    // IMPORT RAW GEOJSON, DOWNLOAD
     app.route('/api/geojson/import').post(geojson.import); // import geojson (hanya berlaku utk data sungai) ke database: tabel sungai_geom    
     app.route('/api/geojson/download/:filename').get(geojson.exportFile); // Export/save geojson folder static
+    
+    // CREATE ZIP FROM UPLOAD DIR
+    app.route('/api/utilities/makezip/upload').get(utilities.makezip);
+
+    // OPTIONS
     app.route('/api/options/:optionKey').get(options.kecamatan); // options     
 
     // SUNGAI

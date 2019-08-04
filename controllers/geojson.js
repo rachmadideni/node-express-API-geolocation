@@ -55,7 +55,12 @@ exports.import = (req,res) => {
 exports.exportFile = (req,res) => {
 
 	const filename = req.params.filename;
-	const { sungai_geom,project } = db.models;
+	
+	const { 
+		sungai_geom,
+		project,
+		upload
+	} = db.models;
 
 	const getIdUnik = async () => {
 		try{			
@@ -96,10 +101,12 @@ exports.exportFile = (req,res) => {
 	}
 
 	const exec = async _ =>{		
+		
 		let unik = await getIdUnik();		
 		const koord_master = []
 
 		for (let i = 0; i < unik.length; i++) {
+    	
     	let featureId = unik[i]
 			const koord_arr = []
     	let koord = await getKordinat(unik[i])
@@ -109,8 +116,7 @@ exports.exportFile = (req,res) => {
 
 			const obj = {};
 			
-			for (let j = 0; j < prop.length; j++) {
-				
+			for (let j = 0; j < prop.length; j++) {				
 				obj['idkecm'] = prop[j].idkecm;
 				obj['nmkecm'] = prop[j].nmkecm;
 				obj['nmsung'] = prop[j].nmsung;
@@ -124,7 +130,6 @@ exports.exportFile = (req,res) => {
 
 			koord_master.push(obj);
 			if(unik.length === i + 1){
-				// return obj;				
 				return koord_master
 			}
 		}
@@ -148,20 +153,54 @@ exports.exportFile = (req,res) => {
 		}
 	}
 
+	const getUpload = async projectId => {
+		try{
+			
+			const uploadFile = await upload.findAll({ where: { projectId: projectId }, attributes: ['projectId', 'tguplo', 'fileName'] });			
+			console.log('x=>',uploadFile);
+			return uploadFile;
+		
+		}catch(err){
+			console.log('error upload:',err);
+		}		
+	}
+
+	
 	const getPoint = async () => {
 		try{
-			const points = await project.findAll();
+			const points = await project.findAll();			
 			const features = [];
-			points.map((item,index)=>{
+			
+			// points.map( (item,index)=>{
+			for (let j = 0; j < points.length; j++) {
+				
 				const obj = {}
-				obj['lng'] = item.dataValues.lng;
-				obj['lat'] = item.dataValues.lat;
-				obj['featureId'] = item.dataValues.featureId;
-				obj['nampro'] = item.dataValues.nampro;
-				obj['tglpro'] = item.dataValues.tglpro;
-				obj['ketera'] = item.dataValues.ketera;
+				
+				// obj['lng'] = item.dataValues.lng;
+				// obj['lat'] = item.dataValues.lat;
+				// obj['featureId'] = item.dataValues.featureId;
+				// obj['nampro'] = item.dataValues.nampro;
+				// obj['tglpro'] = item.dataValues.tglpro;
+				// obj['ketera'] = item.dataValues.ketera;
+				// obj['upload'] = []
+
+				obj['lng'] = points[j].lng;
+				obj['lat'] = points[j].lat;
+				obj['featureId'] = points[j].featureId;
+				obj['nampro'] = points[j].nampro;
+				obj['tglpro'] = points[j].tglpro;
+				obj['ketera'] = points[j].ketera;
+				obj['upload'] = [];
+
+				const fileUpload = await getUpload(points[j].id);				
+				if(fileUpload.length > 0){					
+					obj['upload'].push(fileUpload[0].dataValues);					
+				}else{
+					console.log('undefined bos');
+				}
 				features.push(obj)
-			})
+			// });
+			}
 
 			return features;
 
@@ -170,15 +209,16 @@ exports.exportFile = (req,res) => {
 		}
 	}
 
-	
 
 	getProjectData().then(result=>{
+		
 		if(result.length > 0){
 				
 				const lastItem = result.length;
 				const features = [];
 				
-				result.map( (item,index)=>{			
+				result.map( (item,index)=>{
+
 					const featureId = item.dataValues.featureId;
 					const nampro = item.dataValues.nampro;
 					const tglpro = item.dataValues.tglpro;
@@ -201,10 +241,9 @@ exports.exportFile = (req,res) => {
 						return features;						
 					}
 				});
-
-				return features;
-				// console.log(features);
+				return features;				
 		}
+
 	});
 
 	// array project
@@ -223,10 +262,13 @@ exports.exportFile = (req,res) => {
 		const project = await exec2();
 		const combined = sungai.concat(project);
 		return combined;
+		// const project = await exec2();
+		// return project;
 	}
 
 	combine().then(result=>{
 
+		// console.log(result);
 		// Make Json
 		const combined = geojson.parse(result, {'Point':['lat','lng'], 'LineString': 'line'});		
 		const stringify = JSON.stringify(combined);		
@@ -237,43 +279,9 @@ exports.exportFile = (req,res) => {
 		fs.writeFile(fileLocation, stringify, 'utf8', err=>{
 			if(err){
 				console.log(err);
-			}
-			 
+			}			 
 			response.ok(`${filename}.json`,res);
-
-			//res.download(fileLocation);
-			// res.download
-			//response.ok(combined,res);
-			// console.log('json sdh disimpan ke file')
-
 		});
-		// console.log('combine:',combined) 
-		// response.ok(combined,res);
-		// response.ok(result.features, res);
 	});
-
-
-	/*
-	harus disediakan [{}]
-
-	const contoh = [{
-		x:,
-		y:,
-		prop1:
-		prop1:
-	},{
-		x:,
-		y:,
-		prop1:
-		prop1:
-	},{
-		line:[[]],
-		prop1:
-		prop2:
-	}]
-
-
-	 */
-
 
 }
