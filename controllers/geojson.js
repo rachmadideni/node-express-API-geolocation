@@ -4,6 +4,7 @@ import response from './res';
 import fs from 'fs'
 import geojson from 'geojson';
 import path from 'path'
+var shapefile = require("shapefile");
 // import express from 'express';
 // const router = express.Router();
 
@@ -27,7 +28,7 @@ exports.import = (req,res) => {
 	const keterangan = properties[0].keterangan;
 
 	// geometry
-	const geom = _.map(features,'geometry');	
+	const geom = _.map(features,'geometry');
 
 	if (features.length > 0 && features.length < 2) {
 		
@@ -284,4 +285,88 @@ exports.exportFile = (req,res) => {
 		});
 	});
 
+}
+
+exports.uploadShape = (req,res) => {
+	console.log('tes');
+	// https://stackabuse.com/read-files-with-node-js/
+}
+
+exports.getShapeInfo = (req,res) => {
+	
+	const { shape_upload } = db.models;
+	var features = [];
+	
+	const getName = async () => {
+		return await shape_upload.findOne({
+			attributes:['id','shape_name'],
+			order:[['id','DESC']],
+			limit:1
+		});
+	}
+
+	getName().then( 
+		result=>{
+
+			const shape_name = result.dataValues.shape_name;
+			
+			shapefile.open(path.join('./uploads',shape_name))
+			.then(source=>source.read()
+			.then(function log(result) {
+      	if (result.done){
+      		// return;
+      		return response.ok(features,res);      		
+      	}	
+      	console.log(result.value);
+      	features.push(result.value);
+      	return source.read().then(log);
+    	}))
+    	.catch(error => console.error(error.stack));
+		} 
+	);
+	
+
+	/*shape_upload.findOne({
+		attributes:['id','shape_name'],
+		order:[['id','DESC']],
+		limit:1
+	}).then(result=>{
+		console.log(result.dataValues.shape_name)
+	});*/
+
+	// const getFile = path.join('./uploads');
+	// console.log(getFile);
+}
+
+
+exports.deleteUpload = (req,res) => {
+	
+	const { upload } = db.models;
+	const filename = req.params.filename;
+	
+	
+	const deleteRow = async filename => {
+		const deleteStatus = await upload.destroy({where:{fileName:filename}});
+		if(deleteStatus > 0){
+			console.log('deleteStatus:',deleteStatus);
+			return true;
+		}
+		return false;
+	}
+
+	fs.unlink(path.join(`./uploads/${filename}`),err=>{
+		if(err){
+			throw err;
+			response.error('file tidak ditemukan',res);
+		}
+
+		deleteRow(filename).then(result=>{
+			if(result){
+				response.ok('sukses hapus',res);
+			}else{
+				response.error('gagal hapus',res);
+			}
+		});
+
+	});
 }

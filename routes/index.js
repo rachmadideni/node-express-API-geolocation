@@ -30,12 +30,17 @@ module.exports = app => {
     // IMPORT RAW GEOJSON, DOWNLOAD
     app.route('/api/geojson/import').post(geojson.import); // import geojson (hanya berlaku utk data sungai) ke database: tabel sungai_geom    
     app.route('/api/geojson/download/:filename').get(geojson.exportFile); // Export/save geojson folder static
-    
+    app.route('/api/geojson/shape/upload').post(geojson.uploadShape); // import shape file
+    app.route('/api/geojson/shape/upload').get(geojson.getShapeInfo); // import shape file
+    app.route('/api/geojson/hapusUpload/:filename').get(geojson.deleteUpload);
+
+
     // CREATE ZIP FROM UPLOAD DIR
     app.route('/api/utilities/makezip/upload').get(utilities.makezip);
 
     // OPTIONS
-    app.route('/api/options/:optionKey').get(options.kecamatan); // options     
+    app.route('/api/options/:optionKey').get(options.kecamatan); // kecamatan     
+    app.route('/api/options/marker/list').get(options.getMarkerOptions); // marker
 
     // SUNGAI
     app.route('/api/geojson/load/river').get(river.load); // Load Sungai
@@ -51,6 +56,11 @@ module.exports = app => {
     // PROJECT
     app.route('/api/geojson/project/load').get(project.load); // Load Project
     app.route('/api/geojson/project/add').post(project.addProject); // Tambah Project Baru
+    app.route('/api/geojson/project/addNew').post(project.addNewProject); // Tambah Project Baru menggunakan kolom geometry di tabel
+    app.route('/api/geojson/project/getAttribute/:featureId').get(project.getProjectAttributes); // tes get attribute dari test_project
+    app.route('/api/geojson/project/getAllProjectAttributes').get(project.getAllProjectAttributes); // tes get All attribute dari test_project
+    app.route('/api/geojson/project/addProperties').post(project.addProjectProperties); // test add properties ke test_project
+
     app.route('/api/geojson/project/attribut/:featureId').get(project.loadAttributes); // Query Atribut Project
     app.route('/api/geojson/project/getUploadFiles/:featureId').get(project.getUploadFiles); // Ambil File upload Project
     app.route('/api/geojson/project/hapus').post(project.deleteProject); // Hapus Project

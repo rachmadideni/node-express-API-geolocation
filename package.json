@@ -35,7 +35,9 @@
     "mysql2": "^1.6.5",
     "qim": "0.0.52",
     "request-ip": "^2.1.3",
-    "sequelize": "^5.8.7"
+    "sequelize": "^5.8.7",
+    "shapefile": "^0.6.6",
+    "wkx": "^0.4.8"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",

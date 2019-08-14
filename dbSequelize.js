@@ -3,6 +3,20 @@ import fs from 'fs';
 import path from 'path';
 import _ from 'lodash';
 import chalk from 'chalk';
+import wkx from 'wkx';
+
+Sequelize.GEOMETRY.prototype._stringify = function _stringify(value, options) {
+  return `ST_GeomFromText(${options.escape(wkx.Geometry.parseGeoJSON(value).toWkt())})`;
+}
+Sequelize.GEOMETRY.prototype._bindParam = function _bindParam(value, options) {
+  return `ST_GeomFromText(${options.bindParam(wkx.Geometry.parseGeoJSON(value).toWkt())})`;
+}
+Sequelize.GEOGRAPHY.prototype._stringify = function _stringify(value, options) {
+  return `ST_GeomFromText(${options.escape(wkx.Geometry.parseGeoJSON(value).toWkt())})`;
+}
+Sequelize.GEOGRAPHY.prototype._bindParam = function _bindParam(value, options) {
+  return `ST_GeomFromText(${options.bindParam(wkx.Geometry.parseGeoJSON(value).toWkt())})`;
+}
 
 const config = {
   host: process.env.dbhost,

@@ -1,6 +1,9 @@
 import db from '../dbSequelize';
 import _ from 'lodash';
 import response from './res';
+import geojsonTools from 'geojson-tools';
+import wkx from 'wkx';
+import geojson from 'geojson';
 
 import {
 	isFeatureIdExists,
@@ -240,4 +243,107 @@ exports.deleteProject = (req,res) => {
 		}
 	});
 
+}
+
+// test pake kolom geometry di tabel mysql
+exports.addNewProject = (req,res) => {
+	
+	// req.body.properties
+	// req.body.features => { type:'',geometry:[] }
+	
+	const {
+		test_project
+	} = db.models
+
+	// const { nampro, tglpro, ketera } = req.body.properties
+	const geometry = req.body.features;
+	// console.log('geometry:',req.body.features);
+	const featureId = req.body.featureId;
+
+	let addProject = async ({ featureId, geometry }) => {
+		let isProjectInserted = await test_project.create({ featureId, geometry });
+		return isProjectInserted;
+	}
+
+	addProject({ featureId, geometry })
+	.then(result=>{
+		if(result){
+			response.ok(result,res);
+		}else{
+			response.error(result,res);
+		}
+	});
+}
+
+exports.getProjectAttributes = (req,res) => {
+	const {
+		test_project
+	} = db.models
+
+	const featureId = req.params.featureId
+	
+	const doGet = async featureId => {
+		const q = `SELECT * FROM test_project WHERE featureId=:featureId`;
+		return await db.query(q, { replacements: { featureId: featureId }, type:db.QueryTypes.SELECT })	
+	}
+
+	doGet(featureId).then(result=>{
+		console.log(result);
+		response.ok(result,res)
+	});
+
+}
+
+exports.getAllProjectAttributes = (req,res) => {
+	const {
+		test_project
+	} = db.models
+
+	test_project.findAll({
+		// attributes:{
+		// 	include:[[db.fn('ST_ASTEXT',db.col('geometry')),'koord']]
+		// }
+	}).then(function(projects){
+		
+		var output_array = [];
+		projects.forEach(project=>{			
+			output_array.push(project.dataValues);
+		});
+		
+		geojson.parse(output_array,{GeoJSON:'geometry'}, function(result){
+			// console.log(JSON.stringify(result));
+			if(result){
+				response.ok(result,res);
+			}else{
+				response.error(result,res);
+			}
+		});
+	})
+}
+
+exports.addProjectProperties = (req,res) => {
+	const { test_project } = db.models
+	const properties = req.body.properties;
+	const features = req.body.features[0];
+
+	const doSave = async ({ features, properties }) => {
+		const { id, nampro, tglpro, ketera } = properties;
+		const { id:featureId, geometry } = features;
+		const idMarker = 0;
+		
+		const q = `UPDATE test_project SET nampro=?,tglpro=?,ketera=?,idMarker=? WHERE featureId=?`;
+		return await db.query(q, { 
+			replacements: [nampro, tglpro, ketera, idMarker, featureId],
+			type:db.QueryTypes.UPDATE
+		});				
+	}
+
+	doSave({ features, properties}).then( result=>{
+		console.log(result);//return [ undefined, 1 ]
+		if(result){
+			response.ok(result[1],res);
+		}else{
+			response.error([],res);
+		}
+	});
 }
