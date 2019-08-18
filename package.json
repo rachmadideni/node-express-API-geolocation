@@ -4,7 +4,8 @@
   "description": "rest api dinas pekerjaan umum kab pangkep. arsitektur mvc",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon start.js"
+    "dev": "nodemon start.js",
+    "pretest":"eslint --ignore-path .gitignore ."
   },
   "keywords": [
     "rest",
@@ -47,6 +48,8 @@
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "babel-register": "^6.26.0",
+    "eslint": "^6.1.0",
+    "eslint-config-strongloop": "^2.1.0",
     "nodemon": "^1.19.0"
   }
 }
