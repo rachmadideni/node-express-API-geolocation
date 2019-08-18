@@ -27,7 +27,13 @@ module.exports = (sequelize,DataTypes) => {
     },
     idMarker:{
     	type:DataTypes.INTEGER(11),
-    	allowNull:true
+    	allowNull:true,
+      defaultValue:0
+    },
+    progress:{
+      type:DataTypes.INTEGER(11),
+      allowNull:true,
+      defaultValues:0
     }
 	},{
     indexes:[{

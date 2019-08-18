@@ -282,7 +282,7 @@ exports.getProjectAttributes = (req,res) => {
 
 	const featureId = req.params.featureId
 	
-	const doGet = async featureId => {
+	const doGet = async (featureId) => {
 		const q = `SELECT * FROM test_project WHERE featureId=:featureId`;
 		return await db.query(q, { replacements: { featureId: featureId }, type:db.QueryTypes.SELECT })	
 	}
@@ -290,6 +290,10 @@ exports.getProjectAttributes = (req,res) => {
 	doGet(featureId).then(result=>{
 		console.log(result);
 		response.ok(result,res)
+	}).catch(err=>{
+		console.log(err)
+		response.error(err,res);
+		throw err;
 	});
 
 }
@@ -327,19 +331,18 @@ exports.addProjectProperties = (req,res) => {
 	const features = req.body.features[0];
 
 	const doSave = async ({ features, properties }) => {
-		const { id, nampro, tglpro, ketera } = properties;
-		const { id:featureId, geometry } = features;
-		const idMarker = 0;
+
+		const { id, nampro, tglpro, ketera, progress, marker } = properties;		
+		const featureId = features.properties.featureId;		
 		
-		const q = `UPDATE test_project SET nampro=?,tglpro=?,ketera=?,idMarker=? WHERE featureId=?`;
+		const q = `UPDATE test_project SET nampro=?,tglpro=?,ketera=?,idMarker=?,progress=? WHERE id=?`;
 		return await db.query(q, { 
-			replacements: [nampro, tglpro, ketera, idMarker, featureId],
+			replacements: [nampro, tglpro, ketera, marker, progress, id],
 			type:db.QueryTypes.UPDATE
 		});				
 	}
 
-	doSave({ features, properties}).then( result=>{
-		console.log(result);//return [ undefined, 1 ]
+	doSave({ features, properties}).then( result=>{		
 		if(result){
 			response.ok(result[1],res);
 		}else{

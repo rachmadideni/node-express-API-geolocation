@@ -35,6 +35,7 @@ router.post('/upload',upload.single('data'),(req,res,next)=>{
 
 // upload file/gambar project
 router.post('/project/upload',upload.single('project'),(req,res,next)=>{
+
 	// console.log('req body project :', req.body.project);
 	// console.log('req file:', req.file);
 
@@ -43,6 +44,7 @@ router.post('/project/upload',upload.single('project'),(req,res,next)=>{
 	console.log('\n===file', req.file);
 
 	const file = req.file;
+	
 	if(!file){
 		const error = new Error('please upload file');
 		error.httpStatusCode = 400
