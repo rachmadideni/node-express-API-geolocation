@@ -1,35 +1,35 @@
 /* jshint indent: 2 */
 
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
   return sequelize.define('upload', {
     id: {
       type: DataTypes.INTEGER(11),
       allowNull: false,
       primaryKey: true,
-      autoIncrement: true
+      autoIncrement: true,
     },
     projectId: {
       type: DataTypes.INTEGER(11),
-      allowNull: true
+      allowNull: true,
     },
-    iduplo:{
+    iduplo: {
       type: DataTypes.INTEGER(11),
-      allowNull: true
+      allowNull: true,
     },
-    tguplo:{
+    tguplo: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
     fileName: {
       type: DataTypes.STRING(255),
-      allowNull: true
+      allowNull: true,
     },
     url: {
       type: DataTypes.STRING(255),
-      allowNull: true
-    }
+      allowNull: true,
+    },
   }, {
-    tableName: 'dt_upload'
+    tableName: 'dt_upload',
   });
 };

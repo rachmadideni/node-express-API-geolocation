@@ -1,372 +1,351 @@
-import db from '../dbSequelize';
 import _ from 'lodash';
-import response from './res';
-import fs from 'fs'
+import fs from 'fs';
 import geojson from 'geojson';
-import path from 'path'
-var shapefile = require("shapefile");
+import path from 'path';
+import response from './res';
+import db from '../dbSequelize';
+
+const shapefile = require('shapefile');
 // import express from 'express';
 // const router = express.Router();
 
-exports.import = (req,res) => {
-	
-	const { 
-		data } = req.body;
-	
-	const { 
-		sungai_geom:sg,
-		mst_sungai } = db.models
+exports.import = (req, res) => {
+  const { data } = req.body;
 
-	const obj = JSON.parse(data);
-	const features = obj.features;
-	const properties = _.map(features,'properties');	
-	
-	// properties
-	const featureId = properties[0].featureId;
-	const idkecm = properties[0].idkecm;
-	const idsung = properties[0].idsung;
-	const keterangan = properties[0].keterangan;
+  const {
+    sungai_geom: sg,
+    mst_sungai,
+  } = db.models;
 
-	// geometry
-	const geom = _.map(features,'geometry');
+  const obj = JSON.parse(data);
+  const { features } = obj;
+  const properties = _.map(features, 'properties');
 
-	if (features.length > 0 && features.length < 2) {
-		
-		const coords = geom[0].coordinates;
-		const coord = coords[0];
-		
-		const values = []
-		coord.map((item,i)=>{			
-			values[i] = [featureId,idkecm,idsung,item[0],item[1],keterangan]
-		});
+  // properties
+  const { featureId } = properties[0];
+  const { idkecm } = properties[0];
+  const { idsung } = properties[0];
+  const { keterangan } = properties[0];
 
-		const q = `INSERT INTO sungai_geom (featureId,idkecm,idsung,lng,lat,keterangan) VALUES ?`;
-		db.query(q, {
+  // geometry
+  const geom = _.map(features, 'geometry');
+
+  if (features.length > 0 && features.length < 2) {
+    const coords = geom[0].coordinates;
+    const coord = coords[0];
+
+    const values = [];
+    coord.map((item, i) => {
+      values[i] = [featureId, idkecm, idsung, item[0], item[1], keterangan];
+    });
+
+    const q = 'INSERT INTO sungai_geom (featureId,idkecm,idsung,lng,lat,keterangan) VALUES ?';
+    db.query(q, {
 		    replacements: [values],
-		    type: db.QueryTypes.INSERT
-		}).then(result => {
+		    type: db.QueryTypes.INSERT,
+    }).then((result) => {
 		    if (result) {
-		        response.ok({ messages: 'data is inserted successfully' }, res)
+		        response.ok({ messages: 'data is inserted successfully' }, res);
 		    }
-		});
-	}
+    });
+  }
+};
 
-}
+exports.exportFile = (req, res) => {
+  const { filename } = req.params;
 
-exports.exportFile = (req,res) => {
+  const {
+    sungai_geom,
+    project,
+    upload,
+  } = db.models;
 
-	const filename = req.params.filename;
-	
-	const { 
-		sungai_geom,
-		project,
-		upload
-	} = db.models;
+  const getIdUnik = async () => {
+    try {
+      const result = await sungai_geom.findAll();
+      const uniqueResult = _.uniq(result.map((item) => item.featureId));
+      return uniqueResult;
+    } catch (err) {
+      console.log('error while get features data', err);
+    }
+  };
 
-	const getIdUnik = async () => {
-		try{			
-			const result = await sungai_geom.findAll();
-			const uniqueResult = _.uniq(result.map(item=>item.featureId));
-			return uniqueResult;
-		}catch(err){
-			console.log('error while get features data',err);
-		}
-	}
+  const getKordinat = async (id) => {
+    try {
+      const kordinat = await sungai_geom.findAll({ where: { featureId: id } });
+      // console.log(kordinat.dataValues.lng);
+      const all = kordinat.map((coord) => {
+        const item_kordinat = [];
+        item_kordinat.push(coord.lng);
+        item_kordinat.push(coord.lat);
+        return item_kordinat;
+      });
+      return all;
+    } catch (err) {}
+  };
 
-	const getKordinat = async (id) => {
-		try{
-			const kordinat = await sungai_geom.findAll({ where:{ featureId:id }})
-			// console.log(kordinat.dataValues.lng);
-			const all = kordinat.map( coord=>{
-				let item_kordinat = [];
-				item_kordinat.push(coord.lng)
-				item_kordinat.push(coord.lat)				
-				return item_kordinat;
-			});
-			return all;
-		}catch(err){}
-	}
-
-	const getAttribut = async (featureId) => {
-		const q = `SELECT 
+  const getAttribut = async (featureId) => {
+    const q = `SELECT 
 							a.idkecm,c.nmkecm,b.nmsung,a.jenis_sungai,a.keterangan,a.idsung
 							FROM sungai_geom a
 							INNER JOIN mst_sungai b on a.idsung=b.id 
 							INNER JOIN mst_kecamatan c on a.idkecm=c.idkecm
 							WHERE a.featureId=:featureId
 							limit 1`;
-		const attribut = await db.query(q, { replacements: { featureId: featureId }, type:db.QueryTypes.SELECT })
-		//console.log(attribut);
-		return attribut;
-		
-	}
+    const attribut = await db.query(q, { replacements: { featureId }, type: db.QueryTypes.SELECT });
+    // console.log(attribut);
+    return attribut;
+  };
 
-	const exec = async _ =>{		
-		
-		let unik = await getIdUnik();		
-		const koord_master = []
+  const exec = async (_) => {
+    const unik = await getIdUnik();
+    const koord_master = [];
 
-		for (let i = 0; i < unik.length; i++) {
-    	
-    	let featureId = unik[i]
-			const koord_arr = []
-    	let koord = await getKordinat(unik[i])
-	    koord_arr.push(koord);	    
+    for (let i = 0; i < unik.length; i++) {
+    	const featureId = unik[i];
+      const koord_arr = [];
+    	const koord = await getKordinat(unik[i]);
+	    koord_arr.push(koord);
 
-	    let prop = await getAttribut(unik[i])
+	    const prop = await getAttribut(unik[i]);
 
-			const obj = {};
-			
-			for (let j = 0; j < prop.length; j++) {				
-				obj['idkecm'] = prop[j].idkecm;
-				obj['nmkecm'] = prop[j].nmkecm;
-				obj['nmsung'] = prop[j].nmsung;
-				obj['jenis_sungai'] = prop[j].jenis_sungai;
-				obj['keterangan'] = prop[j].keterangan;
-				obj['idsung'] = prop[j].idsung
-			}
+      const obj = {};
 
-			obj['featureId'] = featureId;
-			obj['line'] = koord_arr[0];
+      for (let j = 0; j < prop.length; j++) {
+        obj.idkecm = prop[j].idkecm;
+        obj.nmkecm = prop[j].nmkecm;
+        obj.nmsung = prop[j].nmsung;
+        obj.jenis_sungai = prop[j].jenis_sungai;
+        obj.keterangan = prop[j].keterangan;
+        obj.idsung = prop[j].idsung;
+      }
 
-			koord_master.push(obj);
-			if(unik.length === i + 1){
-				return koord_master
-			}
-		}
+      obj.featureId = featureId;
+      obj.line = koord_arr[0];
 
-		return koord_master
-	
-	}
+      koord_master.push(obj);
+      if (unik.length === i + 1) {
+        return koord_master;
+      }
+    }
 
-	exec().then(result=>{
-		//console.log('exec1:',result);
-		return result;// sungai		
-	});
+    return koord_master;
+  };
+
+  exec().then((result) =>
+  // console.log('exec1:',result);
+		 result, // sungai
+  );
 
 
-	const getProjectData = async () => {
-		try{
-			const projects = await project.findAll();
-			return projects;
-		}catch(err){
-			console.log('erro getProjectData:',err);
-		}
-	}
+  const getProjectData = async () => {
+    try {
+      const projects = await project.findAll();
+      return projects;
+    } catch (err) {
+      console.log('erro getProjectData:', err);
+    }
+  };
 
-	const getUpload = async projectId => {
-		try{
-			
-			const uploadFile = await upload.findAll({ where: { projectId: projectId }, attributes: ['projectId', 'tguplo', 'fileName'] });			
-			console.log('x=>',uploadFile);
-			return uploadFile;
-		
-		}catch(err){
-			console.log('error upload:',err);
-		}		
-	}
-
-	
-	const getPoint = async () => {
-		try{
-			const points = await project.findAll();			
-			const features = [];
-			
-			// points.map( (item,index)=>{
-			for (let j = 0; j < points.length; j++) {
-				
-				const obj = {}
-				
-				// obj['lng'] = item.dataValues.lng;
-				// obj['lat'] = item.dataValues.lat;
-				// obj['featureId'] = item.dataValues.featureId;
-				// obj['nampro'] = item.dataValues.nampro;
-				// obj['tglpro'] = item.dataValues.tglpro;
-				// obj['ketera'] = item.dataValues.ketera;
-				// obj['upload'] = []
-
-				obj['lng'] = points[j].lng;
-				obj['lat'] = points[j].lat;
-				obj['featureId'] = points[j].featureId;
-				obj['nampro'] = points[j].nampro;
-				obj['tglpro'] = points[j].tglpro;
-				obj['ketera'] = points[j].ketera;
-				obj['upload'] = [];
-
-				const fileUpload = await getUpload(points[j].id);				
-				if(fileUpload.length > 0){					
-					obj['upload'].push(fileUpload[0].dataValues);					
-				}else{
-					console.log('undefined bos');
-				}
-				features.push(obj)
-			// });
-			}
-
-			return features;
-
-		}catch(err){
-
-		}
-	}
+  const getUpload = async (projectId) => {
+    try {
+      const uploadFile = await upload.findAll({ where: { projectId }, attributes: ['projectId', 'tguplo', 'fileName'] });
+      console.log('x=>', uploadFile);
+      return uploadFile;
+    } catch (err) {
+      console.log('error upload:', err);
+    }
+  };
 
 
-	getProjectData().then(result=>{
-		
-		if(result.length > 0){
-				
-				const lastItem = result.length;
-				const features = [];
-				
-				result.map( (item,index)=>{
+  const getPoint = async () => {
+    try {
+      const points = await project.findAll();
+      const features = [];
 
-					const featureId = item.dataValues.featureId;
-					const nampro = item.dataValues.nampro;
-					const tglpro = item.dataValues.tglpro;
-					const ketera = item.dataValues.ketera;
-					const lng = item.dataValues.lng;
-					const lat = item.dataValues.lat;
+      // points.map( (item,index)=>{
+      for (let j = 0; j < points.length; j++) {
+        const obj = {};
 
-					const obj = {}
-					const geom = {}
-					const properties = {}
-					
-					obj['type'] = 'Feature'
-					obj['id'] = featureId;
-					geom['type'] = 'Point'
-					geom['coordinates'] = [lng,lat]
-					obj['geometry'] = geom;
-					obj['properties'] = { featureId,nampro,tglpro,ketera }
-					features.push(obj);	
-					if(lastItem === index + 1){
-						return features;						
-					}
-				});
-				return features;				
-		}
+        // obj['lng'] = item.dataValues.lng;
+        // obj['lat'] = item.dataValues.lat;
+        // obj['featureId'] = item.dataValues.featureId;
+        // obj['nampro'] = item.dataValues.nampro;
+        // obj['tglpro'] = item.dataValues.tglpro;
+        // obj['ketera'] = item.dataValues.ketera;
+        // obj['upload'] = []
 
-	});
+        obj.lng = points[j].lng;
+        obj.lat = points[j].lat;
+        obj.featureId = points[j].featureId;
+        obj.nampro = points[j].nampro;
+        obj.tglpro = points[j].tglpro;
+        obj.ketera = points[j].ketera;
+        obj.upload = [];
 
-	// array project
-	const exec2 = async _ =>{
-		const allPoint = await getPoint();
-		return allPoint;
-	}
+        const fileUpload = await getUpload(points[j].id);
+        if (fileUpload.length > 0) {
+          obj.upload.push(fileUpload[0].dataValues);
+        } else {
+          console.log('undefined bos');
+        }
+        features.push(obj);
+        // });
+      }
 
-	exec2().then(result=>{
-		//console.log('exec2:',result)
-		return result;// project		
-	});
+      return features;
+    } catch (err) {
 
-	const combine = async () => {		
-		const sungai = await exec();
-		const project = await exec2();
-		const combined = sungai.concat(project);
-		return combined;
-		// const project = await exec2();
-		// return project;
-	}
+    }
+  };
 
-	combine().then(result=>{
 
-		// console.log(result);
-		// Make Json
-		const combined = geojson.parse(result, {'Point':['lat','lng'], 'LineString': 'line'});		
-		const stringify = JSON.stringify(combined);		
-		
-		// set file location
-		const fileLocation = path.join('./uploads', filename + '.json');
-		
-		fs.writeFile(fileLocation, stringify, 'utf8', err=>{
-			if(err){
-				console.log(err);
-			}			 
-			response.ok(`${filename}.json`,res);
-		});
-	});
+  getProjectData().then((result) => {
+    if (result.length > 0) {
+      const lastItem = result.length;
+      const features = [];
 
-}
+      result.map((item, index) => {
+        const { featureId } = item.dataValues;
+        const { nampro } = item.dataValues;
+        const { tglpro } = item.dataValues;
+        const { ketera } = item.dataValues;
+        const { lng } = item.dataValues;
+        const { lat } = item.dataValues;
 
-exports.uploadShape = (req,res) => {
-	console.log('tes');
-	// https://stackabuse.com/read-files-with-node-js/
-}
+        const obj = {};
+        const geom = {};
+        const properties = {};
 
-exports.getShapeInfo = (req,res) => {
-	
-	const { shape_upload } = db.models;
-	var features = [];
-	
-	const getName = async () => {
-		return await shape_upload.findOne({
-			attributes:['id','shape_name'],
-			order:[['id','DESC']],
-			limit:1
-		});
-	}
+        obj.type = 'Feature';
+        obj.id = featureId;
+        geom.type = 'Point';
+        geom.coordinates = [lng, lat];
+        obj.geometry = geom;
+        obj.properties = {
+          featureId, nampro, tglpro, ketera,
+        };
+        features.push(obj);
+        if (lastItem === index + 1) {
+          return features;
+        }
+      });
+      return features;
+    }
+  });
 
-	getName().then( 
-		result=>{
+  // array project
+  const exec2 = async (_) => {
+    const allPoint = await getPoint();
+    return allPoint;
+  };
 
-			const shape_name = result.dataValues.shape_name;
-			
-			shapefile.open(path.join('./uploads',shape_name))
-			.then(source=>source.read()
-			.then(function log(result) {
-      	if (result.done){
+  exec2().then((result) =>
+  // console.log('exec2:',result)
+		 result, // project
+  );
+
+  const combine = async () => {
+    const sungai = await exec();
+    const project = await exec2();
+    const combined = sungai.concat(project);
+    return combined;
+    // const project = await exec2();
+    // return project;
+  };
+
+  combine().then((result) => {
+    // console.log(result);
+    // Make Json
+    const combined = geojson.parse(result, { Point: ['lat', 'lng'], LineString: 'line' });
+    const stringify = JSON.stringify(combined);
+
+    // set file location
+    const fileLocation = path.join('./uploads', `${filename}.json`);
+
+    fs.writeFile(fileLocation, stringify, 'utf8', (err) => {
+      if (err) {
+        console.log(err);
+      }
+      response.ok(`${filename}.json`, res);
+    });
+  });
+};
+
+exports.uploadShape = (req, res) => {
+  console.log('tes');
+  // https://stackabuse.com/read-files-with-node-js/
+};
+
+exports.getShapeInfo = (req, res) => {
+  const { shape_upload } = db.models;
+  const features = [];
+
+  const getName = async () => await shape_upload.findOne({
+    attributes: ['id', 'shape_name'],
+    order: [['id', 'DESC']],
+    limit: 1,
+  });
+
+  getName().then(
+    (result) => {
+      const { shape_name } = result.dataValues;
+
+      shapefile.open(path.join('./uploads', shape_name))
+        .then((source) => source.read()
+          .then(function log(result) {
+      	if (result.done) {
       		// return;
-      		return response.ok(features,res);      		
-      	}	
+      		return response.ok(features, res);
+      	}
       	console.log(result.value);
       	features.push(result.value);
       	return source.read().then(log);
     	}))
-    	.catch(error => console.error(error.stack));
-		} 
-	);
-	
+    	.catch((error) => console.error(error.stack));
+    },
+  );
 
-	/*shape_upload.findOne({
+
+  /* shape_upload.findOne({
 		attributes:['id','shape_name'],
 		order:[['id','DESC']],
 		limit:1
 	}).then(result=>{
 		console.log(result.dataValues.shape_name)
-	});*/
+	}); */
 
-	// const getFile = path.join('./uploads');
-	// console.log(getFile);
-}
+  // const getFile = path.join('./uploads');
+  // console.log(getFile);
+};
 
 
-exports.deleteUpload = (req,res) => {
-	
-	const { upload } = db.models;
-	const filename = req.params.filename;
-	
-	
-	const deleteRow = async filename => {
-		const deleteStatus = await upload.destroy({where:{fileName:filename}});
-		if(deleteStatus > 0){
-			console.log('deleteStatus:',deleteStatus);
-			return true;
-		}
-		return false;
-	}
+exports.deleteUpload = (req, res) => {
+  const { upload } = db.models;
+  const { filename } = req.params;
 
-	fs.unlink(path.join(`./uploads/${filename}`),err=>{
-		if(err){
-			throw err;
-			response.error('file tidak ditemukan',res);
-		}
 
-		deleteRow(filename).then(result=>{
-			if(result){
-				response.ok('sukses hapus',res);
-			}else{
-				response.error('gagal hapus',res);
-			}
-		});
+  const deleteRow = async (filename) => {
+    const deleteStatus = await upload.destroy({ where: { fileName: filename } });
+    if (deleteStatus > 0) {
+      console.log('deleteStatus:', deleteStatus);
+      return true;
+    }
+    return false;
+  };
 
-	});
-}
+  fs.unlink(path.join(`./uploads/${filename}`), (err) => {
+    if (err) {
+      throw err;
+      response.error('file tidak ditemukan', res);
+    }
+
+    deleteRow(filename).then((result) => {
+      if (result) {
+        response.ok('sukses hapus', res);
+      } else {
+        response.error('gagal hapus', res);
+      }
+    });
+  });
+};

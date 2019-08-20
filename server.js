@@ -11,7 +11,7 @@ const upload = require('./routes/upload');
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(logger("dev"));
+app.use(logger('dev'));
 app.use('/api/geojson', upload);
 app.use('/api/static/', express.static('uploads'));
 routes(app);
