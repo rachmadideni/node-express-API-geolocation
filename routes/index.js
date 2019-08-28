@@ -1,13 +1,12 @@
 import multer from 'multer';
 
-// Options Storage
+// Multer Storage Options
 const storage = multer.diskStorage({
   destination(req, file, callback) {
     callback(null, 'uploads/');
   },
   filename(req, file, callback) {
-    const ext = file.mimetype.split('/')[1];
-    // str.split("/")[1];
+    const ext = file.mimetype.split('/')[1];    
     callback(null, `${file.fieldname}_${Date.now()}.${ext}`);
   },
 });
@@ -15,7 +14,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 module.exports = (app) => {
-  // REQUIRE CONTROLLER
+  // CONTROLLER
   const auth = require('../controllers/auth');
   const geojson = require('../controllers/geojson');
   const options = require('../controllers/options');

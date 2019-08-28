@@ -131,11 +131,11 @@ exports.loadAttributes = (req, res) => {
 };
 
 exports.getUploadFiles = (req, res) => {
-  const { featureId } = req.params;
-  console.log(JSON.stringify(req.params.featureId));
-  const q = `SELECT a.id,a.projectId,a.filename,a.url FROM dt_upload a 
-						inner join project_geom b on a.projectId=b.id
-						WHERE b.featureId=:featureId`;
+  const { featureId } = req.params;  
+  const q = `SELECT a.id,a.projectId,a.filename,a.url FROM dt_upload a 						
+						inner join test_project b on a.projectId=b.id
+            WHERE b.featureId=:featureId`;
+  // inner join project_geom b on a.projectId=b.id
   db.query(q, { replacements: { featureId }, type: db.QueryTypes.SELECT })
     .then((result) => {
       if (result) {
@@ -204,17 +204,18 @@ exports.deleteProject = (req, res) => {
   const { featureId } = req.body;
   const {
     project,
+    test_project
   } = db.models;
 
   const isProjectExists = async (featureId) => {
-    const data = await project.findOne({ where: { featureId } });
+    const data = await test_project.findOne({ where: { featureId } });
     return data.dataValues.featureId;
   };
 
   const deleteForMeAction = async (featureId) => {
     const id = await isProjectExists(featureId);
     if (id) {
-      const deleteStatus = await project.destroy({ where: { featureId } });
+      const deleteStatus = await test_project.destroy({ where: { featureId } });
       if (deleteStatus > 0) {
         return true;
       }

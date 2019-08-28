@@ -51,15 +51,18 @@ exports.import = (req, res) => {
   }
 };
 
+// api ini dipanggil saat user klik Tombol exportFile di halaman Download 
 exports.exportFile = (req, res) => {
   const { filename } = req.params;
 
   const {
     sungai_geom,
     project,
+    test_project,
     upload,
   } = db.models;
 
+  // START SUNGAI
   const getIdUnik = async () => {
     try {
       const result = await sungai_geom.findAll();
@@ -137,7 +140,9 @@ exports.exportFile = (req, res) => {
 		 result, // sungai
   );
 
+  // END SUNGAI
 
+  // START PROYEK
   const getProjectData = async () => {
     try {
       const projects = await project.findAll();
@@ -157,8 +162,8 @@ exports.exportFile = (req, res) => {
     }
   };
 
-
-  const getPoint = async () => {
+  // backup getPoint
+  /*const getPoint = async () => {
     try {
       const points = await project.findAll();
       const features = [];
@@ -166,14 +171,6 @@ exports.exportFile = (req, res) => {
       // points.map( (item,index)=>{
       for (let j = 0; j < points.length; j++) {
         const obj = {};
-
-        // obj['lng'] = item.dataValues.lng;
-        // obj['lat'] = item.dataValues.lat;
-        // obj['featureId'] = item.dataValues.featureId;
-        // obj['nampro'] = item.dataValues.nampro;
-        // obj['tglpro'] = item.dataValues.tglpro;
-        // obj['ketera'] = item.dataValues.ketera;
-        // obj['upload'] = []
 
         obj.lng = points[j].lng;
         obj.lat = points[j].lat;
@@ -189,13 +186,55 @@ exports.exportFile = (req, res) => {
         } else {
           console.log('undefined bos');
         }
-        features.push(obj);
-        // });
+        features.push(obj);        
       }
 
       return features;
     } catch (err) {
 
+    }
+  };*/
+
+  const getPoint = async () => {
+    try {
+      const features = [];
+      const points = await test_project.findAll({
+        attributes:{
+          include:[[db.fn('ST_AsText',db.col('geometry')),'geom']]
+        }
+      });
+
+      for (let j = 0; j < points.length; j++) {        
+        const obj = {};
+        if(points[j].geometry.type === 'LineString'){
+          let lng = points[j].geometry.coordinates[0][0];
+          let lat = points[j].geometry.coordinates[0][1];
+          obj.lng = lng;
+          obj.lat = lat;
+        }else{
+          let lng = points[j].geometry.coordinates[0];
+          let lat = points[j].geometry.coordinates[1];
+          obj.lng = lng;
+          obj.lat = lat;
+        }
+        obj.featureId = points[j].featureId;
+        obj.nampro = points[j].nampro;
+        obj.tglpro = points[j].tglpro;
+        obj.ketera = points[j].ketera;
+        obj.upload = [];
+
+        const fileUpload = await getUpload(points[j].id);
+        if (fileUpload.length > 0) {
+          obj.upload.push(fileUpload[0].dataValues);
+        } else {
+          console.log('undefined bos');
+        }
+        features.push(obj);        
+      }
+
+      return features;
+    } catch (err) {
+      console.log(err);
     }
   };
 
@@ -237,12 +276,13 @@ exports.exportFile = (req, res) => {
   // array project
   const exec2 = async (_) => {
     const allPoint = await getPoint();
+    // console.log(allPoint)
     return allPoint;
   };
 
   exec2().then((result) =>
-  // console.log('exec2:',result)
-		 result, // project
+    // console.log('exec2:',result)
+		result, // project
   );
 
   const combine = async () => {
@@ -250,19 +290,13 @@ exports.exportFile = (req, res) => {
     const project = await exec2();
     const combined = sungai.concat(project);
     return combined;
-    // const project = await exec2();
-    // return project;
   };
 
   combine().then((result) => {
-    // console.log(result);
-    // Make Json
     const combined = geojson.parse(result, { Point: ['lat', 'lng'], LineString: 'line' });
     const stringify = JSON.stringify(combined);
-
     // set file location
     const fileLocation = path.join('./uploads', `${filename}.json`);
-
     fs.writeFile(fileLocation, stringify, 'utf8', (err) => {
       if (err) {
         console.log(err);
