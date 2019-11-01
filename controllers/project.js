@@ -316,17 +316,17 @@ exports.addProjectProperties = (req, res) => {
 
   const doSave = async ({ features, properties }) => {
     const {
-      id, nampro, tglpro, ketera, progress, marker,
+      id, nampro, tglpro, ketera, progress, idMarker,
     } = properties;
     const { featureId } = features.properties;
 
     const q = 'UPDATE test_project SET nampro=?,tglpro=?,ketera=?,idMarker=?,progress=? WHERE id=?';
     return await db.query(q, {
-      replacements: [nampro, tglpro, ketera, marker, progress, id],
+      replacements: [nampro, tglpro.substr(0,10), ketera, idMarker, progress, id],
       type: db.QueryTypes.UPDATE,
     });
   };
-
+  
   doSave({ features, properties }).then((result) => {
     if (result) {
       response.ok(result[1], res);
